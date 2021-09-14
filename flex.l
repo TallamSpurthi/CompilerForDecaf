@@ -2,35 +2,26 @@
 #include <iostream>
 using namespace std;
 #define YY_DECL extern "C" int yylex()
+#include "flex.tab.h"
 %}
 %%
-[ \t\n]          ;
-class             { cout << "CLASS" << endl; }
-callout           { cout << "CALLOUT" <<  endl; }
-boolean           { cout << "BOOLEAN_DECLARATION" << endl; }
-"true" | "false" {cout << "BOOLEAN: " << yytext << endl;}
-int              {cout << "INT_DECLARATION" << endl;}
-[a-zA-Z][a-zA-Z0-9]*  {cout << "ID: " << yytext << endl;}
-[0-9]+				{cout << "INT: " << yytext << endl;}
-0x[a-fA-F0-9]+	{cout << "INT: " << yytext << endl;}
-"\""('[. | \n]')"\""          {cout << "CHARACTER: " << yytext << endl;}
-\"(\\.|[^"])*\"			{cout << "STRING: " << yytext << endl;}
-[\(\)\{\};,\[\]]    ;
-"+" | "-" | "*" | "/" | "%" | "||" | "&&" | "==" | "!=" | "<" | ">" | ">=" | "<=" | "+=" | "-=" | "!"    ;
-.                ;
+[ \t\n]					;
+class					{ return CLASS; }
+callout					{ return CALLOUT; }
+"true"					{ yylval.bval = 1; return BOOLEAN; }
+"false"					{ yylval.bval = 0; return BOOLEAN; }
+int						{ return INT_DECLARATION; }
+boolean 				{ return BOOLEAN_DECLARATION; }
+[a-zA-Z][a-zA-Z0-9]*	{ yylval.sval = strdup(yytext); return ID; }
+"!"						{ return '!'; }
+"=="|"!="				{ return yytext[0]; }
+"*"|"/"|"%"|"+"|"-"		{ return yytext[0]; }
+"="|"+="|"-="			{ return ASSIGN_OP; }
+"<"|">"|"<="|">="		{ return yytext[0]; }
+"&&"|"||"				{ return yytext[0]; }
+"("|")"|"{"|"}"|"["|"]"|","|";"		{ return yytext[0]; }
+"\""([^\n\"\\]*(\\[.\n])*)*"\"" 			{ yylval.sval = strdup(yytext); return STRING; }
+"\""('[.|\n]')"\""				{ yylval.cval = atoi(yytext); return CHARACTER; }
+[0-9]+					{ yylval.ival = atoi(yytext); return INT; }
+0x[0-9a-fA-F]+ 			{ yylval.ival = atoi(yytext); return INT; }
 %%
-int main(int, char**) {
-	
-	// open a file handle to a particular file:
-	FILE *myfile = fopen("test_program", "r");
-	// make sure it's valid:
-	if (!myfile) {
-		cout << "I can't open test_program!" << endl;
-		return -1;
-	}
-	// set lex to read from it instead of defaulting to STDIN:
-	yyin = myfile;
-	
-	// lex through the input:
-	yylex();
-}
